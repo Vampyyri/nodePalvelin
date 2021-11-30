@@ -25,9 +25,7 @@ app.get('/', function (req, res) {
     console.log(data)
     res.end();
     });
-  }).listen(3001, function(){
-  console.log("Express server listening on port " + 3001);
-  });
+  })
 
 
 var s_server = https.createServer(options, app).listen(port, '', null, function()  {
