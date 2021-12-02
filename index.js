@@ -127,11 +127,12 @@ app.post('/login', (req, res, next) => {
       
     });
     */
-    let token = jwt.sign(req.body.login, "kissa");
+    console.log("Login sai: " +req.body)
+    let token = jwt.sign(req.body.lo, "kissa");
     res.json(token)
     console.log("login, token "+token)
     readline.close();  
-  });
+  
   
 
   
