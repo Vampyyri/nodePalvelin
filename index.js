@@ -11,33 +11,45 @@ const { application, response } = require('express');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
-
+/*
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
 }
+*/
+
+
+var port = 3005;
 
 
 
-//var port = 443;
+
+var app = express();
 /*
 var options = {
     key: fs.readFileSync('./server-key.pem', 'utf8'),
     cert: fs.readFileSync('./server-cert.pem', 'utf8'),
 };
-*/
-var app = express();
 app.use(cors(corsOptions));
-var tietoja = fs.readFileSync('db.json');
-var tiedot = JSON.parse(tietoja);
 
+
+
+*/
 
 // uusi jwt-osa
 
 
 app.use(express.json())
 
+const path = require('path')
+
+  app.use(express.static(path.join(__dirname, 'build')));
+
+
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
 
 const checkToken = (request, response, next) => {
   //console.log("Näin sitä lisäilllään ykköstoiminto palvelimeen")
@@ -170,15 +182,8 @@ app.get('/', function (req, res, next) {
     console.log("Express server listening on port " + port)
   })
 
-  const path = require('path')
-
-  app.use(express.static(path.join(__dirname, 'build')));
-
-
-  app.get('/*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-
+  
+  
 /*
   
 */
