@@ -10,8 +10,17 @@ const jwt = require('jsonwebtoken');
 const { application, response } = require('express');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const cors = require('cors');
 
-var port = 443;
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+  optionSuccessStatus: 200,
+}
+
+
+
+//var port = 443;
 /*
 var options = {
     key: fs.readFileSync('./server-key.pem', 'utf8'),
@@ -19,6 +28,7 @@ var options = {
 };
 */
 var app = express();
+app.use(cors(corsOptions));
 var tietoja = fs.readFileSync('db.json');
 var tiedot = JSON.parse(tietoja);
 
@@ -127,11 +137,11 @@ app.post('/login', (req, res, next) => {
       
     });
     */
-    console.log("Login sai: " +req.body)
+    console.log("Login sai: " , req.body)
     let token = jwt.sign(req.body.lo, "kissa");
     res.json(token)
     console.log("login, token "+token)
-    readline.close();  
+    //readline.close();  
   
   
 
@@ -159,6 +169,16 @@ app.get('/', function (req, res, next) {
   app.listen(port, () => {
     console.log("Express server listening on port " + port)
   })
+
+  const path = require('path')
+
+  app.use(express.static(path.join(__dirname, 'build')));
+
+
+  app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+
 /*
   
 */
