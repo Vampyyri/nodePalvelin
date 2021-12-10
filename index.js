@@ -20,12 +20,48 @@ const corsOptions = {
 */
 
 
-var port = 3005;
+var port = 443;
 
 
 
 
 var app = express();
+
+var mysql = require('mysql');
+
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "postgres",
+  password: "yourpassword",
+  database: "Tentti_uusi",
+  port: 5432,
+});
+
+con.connect(function(err) {
+  if (err) throw err;
+  console.log("Connected!");
+  var sql = "INSERT INTO Käyttäjä (käyttäjänimi, salasana) VALUES ('', '')";
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    console.log("1 record inserted");
+  });
+});
+
+
+/*
+const { Pool, Client } = require("pg");
+const pool = new Pool({
+  user:"postgres",
+  host:"localhost",
+  database:"postgres",
+  password: "admin",
+  port: 5432,
+});
+pool.query("SELECT NOW()", (err, res) => {
+  console.log(err, res);
+  pool.end();
+});
+*/
 /*
 var options = {
     key: fs.readFileSync('./server-key.pem', 'utf8'),
