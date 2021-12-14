@@ -11,16 +11,16 @@ const { application, response } = require('express');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
-/*
+
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
 }
-*/
 
 
-var port = 443;
+
+var port = 3005;
 
 
 
@@ -28,50 +28,33 @@ var port = 443;
 var app = express();
 
 var mysql = require('mysql');
-
-var con = mysql.createConnection({
-  host: "localhost",
-  user: "postgres",
-  password: "yourpassword",
-  database: "Tentti_uusi",
-  port: 5432,
-});
-
-con.connect(function(err) {
-  if (err) throw err;
-  console.log("Connected!");
-  var sql = "INSERT INTO Käyttäjä (käyttäjänimi, salasana) VALUES ('', '')";
-  con.query(sql, function (err, result) {
-    if (err) throw err;
-    console.log("1 record inserted");
-  });
-});
-
-
 /*
+
+
+*/
+
+
 const { Pool, Client } = require("pg");
 const pool = new Pool({
   user:"postgres",
   host:"localhost",
-  database:"postgres",
-  password: "admin",
+  database:"Tentit_uusi",
+  password: "AK6090oeSQL",
   port: 5432,
 });
+/*
 pool.query("SELECT NOW()", (err, res) => {
   console.log(err, res);
   pool.end();
 });
 */
-/*
-var options = {
-    key: fs.readFileSync('./server-key.pem', 'utf8'),
-    cert: fs.readFileSync('./server-cert.pem', 'utf8'),
-};
+
+
 app.use(cors(corsOptions));
 
 
 
-*/
+
 
 // uusi jwt-osa
 
@@ -80,10 +63,16 @@ app.use(express.json())
 
 const path = require('path')
 
-  app.use(express.static(path.join(__dirname, 'build')));
+var options = {
+  key: fs.readFileSync('./server-key.pem', 'utf8'),
+  cert: fs.readFileSync('./server-cert.pem', 'utf8'),
+};
 
 
-  app.get('/', (req, res) => {
+app.use(express.static(path.join(__dirname, 'build')));
+
+
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
 
@@ -103,98 +92,63 @@ const checkToken = (request, response, next) => {
     console.log(user)
     next()
   })
+
 } 
 
+
+
 app.post('/register', (req, res, next) => {
-  const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-   
-  readline.question('Anna käyttäjänimi: ', kayttajanimi => {
-    console.log(`Hey there ${kayttajanimi}!`);
-    var nimi = kayttajanimi;
-    
-    readline.question('Anna salasana: ', salasana => {
-      var password = salasana;
-      bcrypt.hash(password, saltRounds, function(err, hash) {
-        
-        console.log(hash)        
-        var salattuSalasana = hash
-        console.log(salattuSalasana);
-        
-                  
-          
-          axios.get('http://localhost:3003/kayttajat')
-            .then(function (response) {
-                  console.log("noudettu data", response.data);
-                  //var users = JSON.stringify(response.data)
-                  //var users2 = JSON.parse(response.data)
-                  console.log("Users: " +users);
-                  users.push({"nimi":nimi, "salasana": salattuSalasana})
-              })
-              .catch(function (error) {
-              console.log(error);
-              })
-              .then(function () {
-            }); 
-        
-          axios.post('http://localhost:3003/kayttajat', {"nimi":nimi, "salasana": salattuSalasana})
-              .then(function(response) {
-                console.log("noudettu data", response.data);
-                  console.log("kayttäjä lisätty ok");
-                  
-              })
-              .catch(function (error) {
-                  console.log(error);
-              })
-              .then(function () {
-                 
   
-                  // always executed
-              });
-        
-        
+    console.log("Register sai: ", req.body.username)
+    const nimi = req.body.username;
     
-      });  
-      //console.log(`talennettu ${salattuSalasana}!`);
+    const password = req.body.password;
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+        
+      console.log(hash)        
+      var salattuSalasana = hash
+      console.log(salattuSalasana);
+      pool.query("INSERT INTO käyttäjä (käyttäjänimi, salasana) VALUES ($1, $2)", [nimi, salattuSalasana], function (err, result) {
+        if (err) throw err;
+        console.log("1 record inserted");
+      });
     })  
-      readline.close();
-    
-    
-  });
-
-  
-
-  //console.log("Nyt tallennetaan uusi käyttäjä")
-  //console.log("Salasana salatussa muodossa on "+salattuSalasana)
-})
-
-app.post('/login', (req, res, next) => {
-
-  /*
-  const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-   
-  readline.question('Mikä on käyttäjänimesi?  ', login => {
-    console.log(`Hey there ${login}!`);
-    readline.question('Mikä on  salasanasi? ', salasana => {
-      console.log(`talennettu ${salasana}!`);
       
-    });
-    */
-    console.log("Login sai: " , req.body)
-    let token = jwt.sign(req.body.lo, "kissa");
-    res.json(token)
-    console.log("login, token "+token)
-    //readline.close();  
-  
-  
+    
+})      
+      
 
+
+app.post('/login', async (req, res, ) => {
+  console.log("Login sai: " , req.body)
+  let logindata = await pool.query("SELECT salasana FROM käyttäjä WHERE käyttäjänimi=$1", [req.body.username])
+  let cr_password = Object.values(logindata.rows[0])
+  console.log(req.body.password)
+
+  console.log("saadaan:   " +cr_password)
+  console.log(req.body.password.toString())
+  let pass = req.body.password.toString()
+  console.log(pass)
+  let hashhh = cr_password.toString()
+  console.log(hashhh)
+  
+  bcrypt.compare(pass, hashhh, function(error, result) {
+    if (error) {
+      throw err
+    } 
+    if (result) {
+      console.log("se on totta! ")
+      let token = jwt.sign(req.body.username, "kissa");
+      res.json(token)
+      console.log("login, token "+token)
+    } else {
+      console.log("Salasan on värin")
+    }
+
+  })
   
 })
+
 app.use(checkToken)
 
 // jwt-osa loppui
@@ -213,27 +167,13 @@ app.get('/', function (req, res, next) {
   })
 
   
-
+  /*
   app.listen(port, () => {
     console.log("Express server listening on port " + port)
   })
-
+  */
   
   
-/*
-  
-*/
-/*
-var s_server = https.createServer(options, app).listen(port, '', null, function()  {
-
-  var host = this.address().address;
-  var port = this.address().port;
-  console.log('listening at http://%s:%s', host, port);
-  console.log("Express server listening on port " + port)
-  
-})
-  
-*/
 
 
 
@@ -257,12 +197,13 @@ app.get('/', function (req, res) {
   res.write(tiedot);
   res.end();
 });
-app.listen(port, () => {
-  console.log("Express server listening on port " + port)
-})
 
 
-
+*/
+var server = https.createServer(options, app).listen(443, function(){
+  console.log("Express server listening on port " + 443);
+  });
+  /*
 var server = https.createServer(options, app, function (req, res) {
   fs.readFile('db.json', {encoding: "utf8"}, function(err, data) {
     res.writeHead(200, {'Content-Type': 'text/json'});
@@ -270,8 +211,8 @@ var server = https.createServer(options, app, function (req, res) {
     console.log(data)
     return res.end();
     });
-  }).listen(port, function(){
-  console.log("Express server listening on port " + port);
+  }).listen(443, function(){
+  console.log("Express server listening on port " + 443);
   });
 
 app.get('/', function (req, res) {
