@@ -151,8 +151,19 @@ app.post('/login', async (req, res, ) => {
 
 app.use(checkToken)
 
-// jwt-osa loppui
+const luo_kysymys = () => {
+  pool.query("INSERT INTO kysymys (TenttiId, kysymys_teksti) VALUES ($1, $2)", [?, "Mitä vielä kysyä"], function (err, result) {
+    if (err) throw err;
+    console.log("kysymys lisätty");
+  });
 
+
+}
+
+
+
+// jwt-osa loppui
+/*
 app.get('/', function (req, res, next) {
   if (req.user) {
     fs.readFile('./db.json', "utf8", function(err, data) {
@@ -166,7 +177,7 @@ app.get('/', function (req, res, next) {
     }
   })
 
-  
+  */
   /*
   app.listen(port, () => {
     console.log("Express server listening on port " + port)
