@@ -11,12 +11,12 @@ const { application, response } = require('express');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
-
+/* 
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
-}
+} */
 
 
 
@@ -26,7 +26,7 @@ var port = 3005;
 
 
 var app = express();
-
+//app.cors();
 var mysql = require('mysql');
 /*
 
@@ -50,7 +50,7 @@ pool.query("SELECT NOW()", (err, res) => {
 */
 
 
-app.use(cors(corsOptions));
+app.use(cors(/* corsOptions */));
 
 
 
@@ -72,15 +72,13 @@ var options = {
 app.use(express.static(path.join(__dirname, 'build')));
 
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
+
 
 const checkToken = (request, response, next) => {
   //console.log("Näin sitä lisäilllään ykköstoiminto palvelimeen")
   const authHeader = request.headers['authorization']
   const token = authHeader && authHeader.split(' ')[1]
-  console.log("aH: " +authHeader)
+  console.log("authHeader: " +authHeader)
 
   if (token == null) return response.sendStatus(401)
   console.log("Token: " +token)
@@ -97,29 +95,44 @@ const checkToken = (request, response, next) => {
 
 
 
-app.post('/register', (req, res, next) => {
-  
+app.post('/register', async (req, res, next) => {
+  try {
     console.log("Register sai: ", req.body.username)
     const nimi = req.body.username;
     
-    const password = req.body.password;
-    bcrypt.hash(password, saltRounds, function(err, hash) {
-        
-      console.log(hash)        
-      var salattuSalasana = hash
-      console.log(salattuSalasana);
-      pool.query("INSERT INTO käyttäjä (käyttäjänimi, salasana) VALUES ($1, $2)", [nimi, salattuSalasana], function (err, result) {
-        if (err) throw err;
-        console.log("1 record inserted");
-      });
-    })  
-      
+    let checkname = await pool.query("SELECT salasana FROM käyttäjä WHERE käyttäjänimi=$1", [nimi]) 
     
-})      
+    console.log("checkname: ", checkname)
+    console.log((Object.values(checkname.rows[0])))
+      if (Object.values(checkname.rows[0]) != null) {
+        res.json("Käyttäjänimi jo on olemassa")
+      } else {
+        const password = req.body.password;
+        bcrypt.hash(password, saltRounds, function(err, hash) {
+        
+        console.log(hash)        
+        var salattuSalasana = hash
+        console.log(salattuSalasana);
+      
+        pool.query("INSERT INTO käyttäjä (käyttäjänimi, salasana) VALUES ($1, $2)", [nimi, salattuSalasana], function (err, result) {
+          if (err) throw err;
+          console.log("1 record inserted");
+          });
+        })  
+  
+      }  
+    
+      
+  }  catch (error) {
+    res.json({error:"jokin meni pieleen rekisteroimisessa:"+error})
+  }  
+}); 
       
 
 
 app.post('/login', async (req, res, ) => {
+ 
+  try {
   console.log("Login sai: " , req.body)
   let logindata = await pool.query("SELECT salasana FROM käyttäjä WHERE käyttäjänimi=$1", [req.body.username])
   let cr_password = Object.values(logindata.rows[0])
@@ -138,19 +151,46 @@ app.post('/login', async (req, res, ) => {
     } 
     if (result) {
       console.log("se on totta! ")
-      let token = jwt.sign(req.body.username, "kissa");
+      var token = jwt.sign(req.body.username, "kissa");
       res.json(token)
       console.log("login, token "+token)
+      //return token;
     } else {
+      res.json("Kirjäutuminen on epäonnistunut")
       console.log("Salasan on värin")
     }
 
   })
-  
+  } catch (error) {
+    res.json({error:"jokin meni pieleen kirjautumisessa:"+error})
+  }  
 })
 
 app.use(checkToken)
 
+app.get('/lessons', async (req, res) => {
+  
+    let lessons = pool.query('SELECT * FROM tentti')
+    .then(data => console.log(data)).catch(error => console.error(error))
+})
+//app.use(tentit)
+//tentit()
+
+const valinta = () => {
+  app.post('/', async (req, res, ) => {
+    pool.query("INSERT INTO vastaus (totuus) WHERE id=$1 TenttiId=$2 kysymysId=$3 VALUES (true)", [req.body.tentti, req.body.kysymys, req.body.vastaus] )
+  })
+}
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+app.listen(port, function(){
+  console.log("Express server listening on port "+port);
+  });
+
+/*
 const luo_kysymys = () => {
   pool.query("INSERT INTO kysymys (TenttiId, kysymys_teksti) VALUES ($1, $2)", [?, "Mitä vielä kysyä"], function (err, result) {
     if (err) throw err;
@@ -159,7 +199,7 @@ const luo_kysymys = () => {
 
 
 }
-
+*/
 
 
 // jwt-osa loppui
@@ -209,12 +249,15 @@ app.get('/', function (req, res) {
   res.end();
 });
 
-
-*/
 var server = https.createServer(options, app).listen(443, function(){
   console.log("Express server listening on port " + 443);
   });
-  /*
+
+
+/* var server = https.createServer(options, app).listen(443, function(){
+  console.log("Express server listening on port " + 443);
+  });
+ */  /*
 var server = https.createServer(options, app, function (req, res) {
   fs.readFile('db.json', {encoding: "utf8"}, function(err, data) {
     res.writeHead(200, {'Content-Type': 'text/json'});
