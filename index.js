@@ -73,7 +73,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 
 
 
-
+/*
 const checkToken = (request, response, next) => {
   //console.log("Näin sitä lisäilllään ykköstoiminto palvelimeen")
   const authHeader = request.headers['authorization']
@@ -93,39 +93,47 @@ const checkToken = (request, response, next) => {
 
 } 
 
-
+*/
 
 app.post('/register', async (req, res, next) => {
   try {
     console.log("Register sai: ", req.body.username)
     const nimi = req.body.username;
+    const password = req.body.password;
+    console.log(password)
+    let checkname = pool.query("SELECT salasana FROM käyttäjä WHERE käyttäjänimi=$1", [req.body.username])
+    .then(response => {
+      console.log(response)
+      let salasana = Object.values(response.rows[0]).toString()
+      console.log(salasana)
+      res.json("Käyttäjänimi jo on olemassa")
+    })
     
-    let checkname = await pool.query("SELECT salasana FROM käyttäjä WHERE käyttäjänimi=$1", [nimi]) 
-    
-    console.log("checkname: ", checkname)
-    console.log((Object.values(checkname.rows[0])))
-      if (Object.values(checkname.rows[0]) != null) {
-        res.json("Käyttäjänimi jo on olemassa")
-      } else {
-        const password = req.body.password;
-        bcrypt.hash(password, saltRounds, function(err, hash) {
-        
-        console.log(hash)        
-        var salattuSalasana = hash
-        console.log(salattuSalasana);
+    .catch(error => 
+      bcrypt.hash(password, saltRounds, function(err, hash) {
+        if (err) {
+          logger.error("bcrypt.hash "+err);
+          return next(err);
+        } 
+        if (hash) {
+          console.log(hash)        
+          var salattuSalasana = hash
+          console.log(salattuSalasana)
+          pool.query("INSERT INTO käyttäjä (käyttäjänimi, salasana) VALUES ($1, $2)", [nimi, salattuSalasana], function (err, result) {
+            if (err) throw err;
+            if (result) {
+              console.log("käyttäjä on lisätty")
+            }
+          })
+        }
+      })  
       
-        pool.query("INSERT INTO käyttäjä (käyttäjänimi, salasana) VALUES ($1, $2)", [nimi, salattuSalasana], function (err, result) {
-          if (err) throw err;
-          console.log("1 record inserted");
-          });
-        })  
-  
-      }  
+    )
     
-      
   }  catch (error) {
     res.json({error:"jokin meni pieleen rekisteroimisessa:"+error})
   }  
+  
 }); 
       
 
@@ -166,21 +174,112 @@ app.post('/login', async (req, res, ) => {
   }  
 })
 
-app.use(checkToken)
 
+/*
 app.get('/lessons', async (req, res) => {
   
     let lessons = pool.query('SELECT * FROM tentti')
     .then(data => console.log(data)).catch(error => console.error(error))
 })
-//app.use(tentit)
-//tentit()
+*/
 
-const valinta = () => {
-  app.post('/', async (req, res, ) => {
-    pool.query("INSERT INTO vastaus (totuus) WHERE id=$1 TenttiId=$2 kysymysId=$3 VALUES (true)", [req.body.tentti, req.body.kysymys, req.body.vastaus] )
+
+app.put('/valinta', async (req, res,) => {
+  console.log("ollan valinnassa")
+  
+  await pool.query("UPDATE vastaus SET totuus = true WHERE id=$1", [req.body.vastaus])
+    .then(function (response) {
+      console.log("vastauksen bolean on päivitetty");
+
+    })
+    .catch(function (error) {
+        console.log(error);
+
+    });
+})
+
+app.post('/lisatentti', async (req, res,) =>{
+  console.log("yritään lisätä tentin")
+  let rivien_määrä = await pool.query("SELECT COUNT (nimi) FROM tentti")
+  .then(function (response) {
+    console.log(Object.values(response.rows[0]))
+    let rivin_numero = Number(Object.values(response.rows[0]))
+    let uuden_rivin_numero = (rivin_numero + 1)
+    let uusi_tentti = "Tentti " + uuden_rivin_numero
+    console.log(uusi_tentti)
+    pool.query("INSERT INTO tentti (nimi) VALUES ($1)", [uusi_tentti] )
+      .then(function (response) {
+        console.log("tentti lisätty");
+
+      })
+      .catch(function (error) {
+          console.log(error);
+
+      });
+
   })
-}
+  .catch(function (error) {
+      console.log(error);
+
+  });
+ 
+})
+
+app.post('/lisakysymys', async (req, res,) =>{
+  console.log("yritään lisätä kysymyksen")
+  await pool.query("INSERT INTO kysymys (tenttiid, kysymys_teksti) VALUES ($1, $2)", [req.body.tenttiid, "Mitä vielä kysyä?"] )
+  .then(function (response) {
+   
+        console.log("kysymysi lisätty");
+
+  })
+  .catch(function (error) {
+      console.log(error);
+
+  });
+ 
+})
+
+app.post('/lisavastaus', async (req, res,) =>{
+  console.log("yritään lisätä vastauksen")
+  await pool.query("INSERT INTO vastaus (tenttiid, kysymysid, vastaus_teksti) VALUES ($1, $2, $3)", [req.body.tenttiid, req.body.vastausid, req.body.uusivastaus] )
+  .then(function (response) {
+   
+        console.log("vastaus lisätty");
+
+  })
+  .catch(function (error) {
+      console.log(error);
+
+  });
+ 
+})
+
+app.delete('/poistatentti', async (req, res,) =>{
+  console.log("yritään poista tentin")
+  await pool.query("DELETE FROM tentti WHERE id=$1", [req.body.tentti])
+  .then(function (response) {
+    console.log("tuntti poistettu")
+  })
+  .catch(function (error) {
+      console.log(error);
+
+  });
+ 
+})
+
+app.delete('/poistavastaus', async (req, res,) =>{
+  console.log("yritään poista vastauksen")
+  await pool.query("DELETE FROM vastaus WHERE id=$1", [req.body.vastaus])
+  .then(function (response) {
+    console.log("vastaus poistettu")
+  })
+  .catch(function (error) {
+      console.log(error);
+
+  });
+ 
+})
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
