@@ -175,26 +175,98 @@ app.post('/login', async (req, res, ) => {
 })
 
 
-/*
+
 app.get('/lessons', async (req, res) => {
   
-    let lessons = pool.query('SELECT * FROM tentti')
-    .then(data => console.log(data)).catch(error => console.error(error))
+    var lessons = await pool.query('SELECT * FROM tentti')
+    .then(function (response) {
+      //console.log(response)
+      var tentit = response.rows
+     // console.log("Tentit: ", tentit)
+      return tentit
+    })
+    .catch(error => console.error(error))
+
+    var questions = await pool.query('SELECT * FROM kysymys')
+    .then(function (response) {
+      //console.log(response)
+      var kysymykset = response.rows
+      //console.log("Kysymykset: ", kysymykset)
+      return kysymykset
+    })
+    .catch(error => console.error(error))
+
+   var answers = await pool.query('SELECT * FROM vastaus')
+    .then(function (response) {
+      //console.log(response)
+      var vastaukset = response.rows
+      //console.log("Vastaukset: ", vastaukset)
+      return vastaukset
+    })
+    .catch(error => console.error(error))
+
+
+    /*
+    console.log(lessons)
+    console.log(questions)
+    console.log(answers)
+    */
+    var kysymykset = []
+    
+    lessons.forEach((element) => {
+      
+      let currentid = Object.values(element.id)
+
+      function kys(a, currentid, key, id, kysymys_teksti) {
+        console.log("tenttiid: ", Object.values(key))
+        console.log("currentid: ", currentid)
+        if (Object.values(key).toString() == currentid.toString()) {
+          console.log("tällä ollaan!")
+          kysymykset.push({id, kysymys_teksti})
+          console.log("kysymykset   ", kysymykset)
+        }
+      }
+            
+      questions.forEach((element) => {
+        kys(element, currentid, element.tenttiid, element.id, element.kysymys_teksti)
+        var kysymyksiä = {"kysymykset": [{kysymykset}]}
+        var new_lessons = Object.assign(lessons, kysymykset)  
+        console.log("New: ", new_lessons)
+      }) 
+      
+        
+      
+    })
+      
+
 })
-*/
 
 
+/*
 app.put('/valinta', async (req, res,) => {
   console.log("ollan valinnassa")
   
-  await pool.query("UPDATE vastaus SET totuus = true WHERE id=$1", [req.body.vastaus])
+  await pool.query("UPDATE käyttäjän_vastaus SET totuus = true WHERE id=$1", [req.body.vastaus])
     .then(function (response) {
       console.log("vastauksen bolean on päivitetty");
 
     })
     .catch(function (error) {
         console.log(error);
+    });
+})
+*/
 
+app.post('/valinta', async (req, res,) => {
+  console.log("ollan valinnassa")
+  
+  await pool.query("INSERT INTO käyttäjän_vastaus (käyttäjäid, vastausid, valinta) VALUES ($1, $2, true)", [req.body.vastaus])
+    .then(function (response) {
+      console.log("vastauksen bolean on päivitetty");
+
+    })
+    .catch(function (error) {
+        console.log(error);
     });
 })
 
