@@ -11,6 +11,7 @@ const { application, response } = require('express');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
+const lodash = require("lodash"); 
 /* 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -212,7 +213,10 @@ app.get('/lessons', async (req, res) => {
     console.log(answers)
     */
     var kysymykset = []
-    
+    var vastaukset = []
+    var new_kysymykset = []
+    console.log("lllessons: ", lessons)
+
     lessons.forEach((element) => {
       
       let currentid = Object.values(element.id)
@@ -222,19 +226,55 @@ app.get('/lessons', async (req, res) => {
         console.log("currentid: ", currentid)
         if (Object.values(key).toString() == currentid.toString()) {
           console.log("tällä ollaan!")
-          kysymykset.push({id, kysymys_teksti})
-          console.log("kysymykset   ", kysymykset)
+          kysymykset.push(kysymys_teksti)
+          
         }
       }
             
-      questions.forEach((element) => {
-        kys(element, currentid, element.tenttiid, element.id, element.kysymys_teksti)
-        var kysymyksiä = {"kysymykset": [{kysymykset}]}
-        var new_lessons = Object.assign(lessons, kysymykset)  
-        console.log("New: ", new_lessons)
-      }) 
-      
+      questions.forEach((item) => {
+        kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
+        let kys_id = item.id
+        answers.forEach((i) => {
+          console.log("kys_id: ", kys_id)
+          console.log("i.kysymysid: ", i.kysymysid)
+          if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
+            console.log("hyväksytty_kys_id: ", kys_id)
+            console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
+            vastaukset.push(i.vastaus_teksti)
+          }
+        })
         
+        new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
+        vastaukset = []
+        console.log("new_kysymykset: ", new_kysymykset)
+      }) 
+      //var kysymyksiä = {"kysymykset": [{kysymykset}]}
+      //console.log("kysymykset   ", kysymykset)
+      //console.log(element)   
+      //var new_lessons = Object.assign(element, kysymykset) 
+      //console.log("lessons: ", lessons)   
+      //console.log("New: ", new_lessons)
+      //var new_tentit = [] 
+      //new_tentit.push({id: element.id, otsikko: element.nimi, kysymykset: [new_kysymykset.kysymys_teksti, new_kysymykset.vastaukset]}) 
+      console.log("new_kysymykset: ", new_kysymykset)
+      
+      
+      //var kysjson = JSON.stringify(new_kysymykset)
+      //console.log("Json: ", kysjson)
+      var uusitentti = [element]
+      uusitentti.push(new_kysymykset)
+      //console.log("Lessons: ", uusitentti)
+      const ehto = (elementб , index, array) => element != null;
+      var vast = []
+      //console.log(new_kysymykset[0].vastaukset)
+      var new_tentit = JSON.stringify({id: element.id, otsikko: element.nimi, kysymykset: [{teksti: new_kysymykset[0].kysymys_teksti, vastaukset:new_kysymykset[0].vastaukset}]})
+      //var new_tentit = lodash.union(uusitentti, new_kysymykset)
+      //var exp = JSON.stringify(new_tentit)
+      //console.log("exp: ", exp)
+      const uudet_tentit = JSON.parse(new_tentit)
+      
+      //new_kysymykset = []
+      console.log("uusi: ", uudet_tentit.kysymykset[0].vastaukset)
       
     })
       
