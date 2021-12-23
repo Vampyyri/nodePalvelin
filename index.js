@@ -12,16 +12,11 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
 const lodash = require("lodash"); 
-/* 
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true,
-  optionSuccessStatus: 200,
-} */
 
 
 
-var port = 3005;
+
+var port = 443;
 
 
 
@@ -50,8 +45,13 @@ pool.query("SELECT NOW()", (err, res) => {
 });
 */
 
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+  optionSuccessStatus: 200,
+}
 
-app.use(cors(/* corsOptions */));
+app.use(cors(corsOptions));
 
 
 
@@ -74,7 +74,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 
 
 
-/*
+
 const checkToken = (request, response, next) => {
   //console.log("Näin sitä lisäilllään ykköstoiminto palvelimeen")
   const authHeader = request.headers['authorization']
@@ -94,7 +94,7 @@ const checkToken = (request, response, next) => {
 
 } 
 
-*/
+
 
 app.post('/register', async (req, res, next) => {
   try {
@@ -175,10 +175,10 @@ app.post('/login', async (req, res, ) => {
   }  
 })
 
+app.use(checkToken)
 
-
-app.get('/lessons', async (req, res) => {
-  
+app.get('/lessons', async (request, response) => {
+  try {
     var lessons = await pool.query('SELECT * FROM tentti')
     .then(function (response) {
       //console.log(response)
@@ -207,15 +207,10 @@ app.get('/lessons', async (req, res) => {
     .catch(error => console.error(error))
 
 
-    /*
-    console.log(lessons)
-    console.log(questions)
-    console.log(answers)
-    */
     var kysymykset = []
     var vastaukset = []
     var new_kysymykset = []
-    console.log("lllessons: ", lessons)
+    
 
     lessons.forEach((element) => {
       
@@ -246,38 +241,24 @@ app.get('/lessons', async (req, res) => {
         
         new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
         vastaukset = []
-        console.log("new_kysymykset: ", new_kysymykset)
+        
       }) 
-      //var kysymyksiä = {"kysymykset": [{kysymykset}]}
-      //console.log("kysymykset   ", kysymykset)
-      //console.log(element)   
-      //var new_lessons = Object.assign(element, kysymykset) 
-      //console.log("lessons: ", lessons)   
-      //console.log("New: ", new_lessons)
-      //var new_tentit = [] 
-      //new_tentit.push({id: element.id, otsikko: element.nimi, kysymykset: [new_kysymykset.kysymys_teksti, new_kysymykset.vastaukset]}) 
+      
       console.log("new_kysymykset: ", new_kysymykset)
+           
+      var new_tentit = {id: element.id, otsikko: element.nimi, kysymykset: [{teksti: new_kysymykset[0].kysymys_teksti, vastaukset:new_kysymykset[0].vastaukset}]}
+    
       
-      
-      //var kysjson = JSON.stringify(new_kysymykset)
-      //console.log("Json: ", kysjson)
-      var uusitentti = [element]
-      uusitentti.push(new_kysymykset)
-      //console.log("Lessons: ", uusitentti)
-      const ehto = (elementб , index, array) => element != null;
-      var vast = []
-      //console.log(new_kysymykset[0].vastaukset)
-      var new_tentit = JSON.stringify({id: element.id, otsikko: element.nimi, kysymykset: [{teksti: new_kysymykset[0].kysymys_teksti, vastaukset:new_kysymykset[0].vastaukset}]})
-      //var new_tentit = lodash.union(uusitentti, new_kysymykset)
-      //var exp = JSON.stringify(new_tentit)
-      //console.log("exp: ", exp)
-      const uudet_tentit = JSON.parse(new_tentit)
-      
-      //new_kysymykset = []
-      console.log("uusi: ", uudet_tentit.kysymykset[0].vastaukset)
+      new_kysymykset = []
+      console.log("uudet: ", new_tentit)
+      //console.log("uusi: ", new_tentit.kysymykset[0].vastaukset)
+      var uudet_tentit = {tentit: [new_tentit]}
       
     })
-      
+    response.send(new_tentit)
+  }  catch (error) {
+    response.json({error:"jokin meni pieleen kirjautumisessa:"+error})
+  }    
 
 })
 
@@ -397,20 +378,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-app.listen(port, function(){
-  console.log("Express server listening on port "+port);
-  });
-
-/*
-const luo_kysymys = () => {
-  pool.query("INSERT INTO kysymys (TenttiId, kysymys_teksti) VALUES ($1, $2)", [?, "Mitä vielä kysyä"], function (err, result) {
-    if (err) throw err;
-    console.log("kysymys lisätty");
-  });
 
 
-}
-*/
+
 
 
 // jwt-osa loppui
@@ -429,17 +399,8 @@ app.get('/', function (req, res, next) {
   })
 
   */
-  /*
-  app.listen(port, () => {
-    console.log("Express server listening on port " + port)
-  })
-  */
+ /*
   
-  
-
-
-
-/*
 app.get('/', function (req, res) {
 
   
@@ -451,24 +412,13 @@ app.get('/', function (req, res) {
  */ 
 
 
-
-
-/*
-
-app.get('/', function (req, res) {
-  res.write(tiedot);
-  res.end();
-});
-
 var server = https.createServer(options, app).listen(443, function(){
   console.log("Express server listening on port " + 443);
   });
 
 
-/* var server = https.createServer(options, app).listen(443, function(){
-  console.log("Express server listening on port " + 443);
-  });
- */  /*
+  
+/*
 var server = https.createServer(options, app, function (req, res) {
   fs.readFile('db.json', {encoding: "utf8"}, function(err, data) {
     res.writeHead(200, {'Content-Type': 'text/json'});
