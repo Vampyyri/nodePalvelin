@@ -177,6 +177,8 @@ app.post('/login', async (req, res, ) => {
 
 app.use(checkToken)
 
+//tunnit tietokannasta React-sovelluksiin
+
 app.get('/lessons', async (request, response) => {
   try {
     var lessons = await pool.query('SELECT * FROM tentti')
@@ -210,7 +212,8 @@ app.get('/lessons', async (request, response) => {
     var kysymykset = []
     var vastaukset = []
     var new_kysymykset = []
-    
+    var new_tentit = []
+    var uudet_tentit = 0
 
     lessons.forEach((element) => {
       
@@ -221,53 +224,68 @@ app.get('/lessons', async (request, response) => {
         console.log("currentid: ", currentid)
         if (Object.values(key).toString() == currentid.toString()) {
           console.log("tällä ollaan!")
-          kysymykset.push(kysymys_teksti)
+          //console.log(Object.values(key).toString())
+          //kysymykset.push(kysymys_teksti)
+          //console.log("Kysymykset: ", kysymykset)
           
         }
       }
             
       questions.forEach((item) => {
-        kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
+        if (Object.values(item.tenttiid).toString() == currentid.toString()){
+           //kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
         let kys_id = item.id
         answers.forEach((i) => {
-          console.log("kys_id: ", kys_id)
-          console.log("i.kysymysid: ", i.kysymysid)
+          //console.log("kys_id: ", kys_id)
+          //console.log("i.kysymysid: ", i.kysymysid)
           if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
-            console.log("hyväksytty_kys_id: ", kys_id)
-            console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
+            //console.log("hyväksytty_kys_id: ", kys_id)
+            //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
             vastaukset.push(i.vastaus_teksti)
+            //console.log("Vastaukset: ", vastaukset)
           }
         })
         
         new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
         vastaukset = []
+        }
+       
+        //console.log("new_kysymykset: ", new_kysymykset)
         
       }) 
       
-      console.log("new_kysymykset: ", new_kysymykset)
-           
-      var new_tentit = {id: element.id, otsikko: element.nimi, kysymykset: [{teksti: new_kysymykset[0].kysymys_teksti, vastaukset:new_kysymykset[0].vastaukset}]}
+      //console.log("new_kysymykset: ", new_kysymykset)
+      //new_tentit.push({id: element.id, otsikko: element.nimi, kysymykset: [{teksti: new_kysymykset[0].kysymys_teksti, vastaukset:new_kysymykset[0].vastaukset}]})  
+    new_tentit.push({id: element.id, otsikko: element.nimi, kysymykset: new_kysymykset})        
+      
     
       
       new_kysymykset = []
-      console.log("uudet: ", new_tentit)
+      //console.log("uudet: ", new_tentit)
+      //var newnewtentit = []
+      //newnewtentit.push(new_tentit)
       //console.log("uusi: ", new_tentit.kysymykset[0].vastaukset)
-      var uudet_tentit = {tentit: [new_tentit]}
+      
+      
+      //response.send(uudet_tentit)
       
     })
-    response.send(new_tentit)
+    console.log("Get useEffectista tuli")
+    uudet_tentit = {tentit: new_tentit}
+    console.log("uudet nyt: ", uudet_tentit)
+    response.send(uudet_tentit)
   }  catch (error) {
     response.json({error:"jokin meni pieleen kirjautumisessa:"+error})
   }    
-
+  
 })
+// loppu lohkon Tunnit tietokannasta React-sovelluksiin
 
 
-/*
 app.put('/valinta', async (req, res,) => {
   console.log("ollan valinnassa")
   
-  await pool.query("UPDATE käyttäjän_vastaus SET totuus = true WHERE id=$1", [req.body.vastaus])
+  await pool.query("UPDATE käyttäjän_vastaus SET valinta = true WHERE vastaus_teksti=$1", [req.body.vastaus])
     .then(function (response) {
       console.log("vastauksen bolean on päivitetty");
 
@@ -276,20 +294,9 @@ app.put('/valinta', async (req, res,) => {
         console.log(error);
     });
 })
-*/
 
-app.post('/valinta', async (req, res,) => {
-  console.log("ollan valinnassa")
-  
-  await pool.query("INSERT INTO käyttäjän_vastaus (käyttäjäid, vastausid, valinta) VALUES ($1, $2, true)", [req.body.vastaus])
-    .then(function (response) {
-      console.log("vastauksen bolean on päivitetty");
 
-    })
-    .catch(function (error) {
-        console.log(error);
-    });
-})
+
 
 app.post('/lisatentti', async (req, res,) =>{
   console.log("yritään lisätä tentin")
