@@ -62,6 +62,8 @@ app.use(cors(corsOptions));
 
 app.use(express.json())
 
+
+
 const path = require('path')
 
 var options = {
@@ -70,7 +72,7 @@ var options = {
 };
 
 
-app.use(express.static(path.join(__dirname, 'build')));
+//app.use(express.static(path.join(__dirname, 'build')));
 
 
 
@@ -175,11 +177,11 @@ app.post('/login', async (req, res, ) => {
   }  
 })
 
-app.use(checkToken)
+//app.use(checkToken)
 
 //tunnit tietokannasta React-sovelluksiin
 
-app.get('/lessons', async (request, response) => {
+app.get('/lessons', checkToken, async (request, response) => {
   try {
     var lessons = await pool.query('SELECT * FROM tentti')
     .then(function (response) {
@@ -300,28 +302,26 @@ app.put('/valinta', async (req, res,) => {
 
 app.post('/lisatentti', async (req, res,) =>{
   console.log("yritään lisätä tentin")
-  let rivien_määrä = await pool.query("SELECT COUNT (nimi) FROM tentti")
+  console.log(req.body.otsikko)
+  /*let rivien_määrä = await pool.query("SELECT COUNT (nimi) FROM tentti")
   .then(function (response) {
     console.log(Object.values(response.rows[0]))
     let rivin_numero = Number(Object.values(response.rows[0]))
     let uuden_rivin_numero = (rivin_numero + 1)
     let uusi_tentti = "Tentti " + uuden_rivin_numero
-    console.log(uusi_tentti)
-    pool.query("INSERT INTO tentti (nimi) VALUES ($1)", [uusi_tentti] )
+    console.log(uusi_tentti)   */
+    await pool.query("INSERT INTO tentti (id, nimi) VALUES ($1, $2)", [req.body.id, req.body.otsikko] )
       .then(function (response) {
+        
         console.log("tentti lisätty");
-
+        res.json("lisätty")
       })
       .catch(function (error) {
           console.log(error);
 
       });
 
-  })
-  .catch(function (error) {
-      console.log(error);
-
-  });
+  
  
 })
 
@@ -342,7 +342,7 @@ app.post('/lisakysymys', async (req, res,) =>{
 
 app.post('/lisavastaus', async (req, res,) =>{
   console.log("yritään lisätä vastauksen")
-  await pool.query("INSERT INTO vastaus (tenttiid, kysymysid, vastaus_teksti) VALUES ($1, $2, $3)", [req.body.tenttiid, req.body.vastausid, req.body.uusivastaus] )
+  await pool.query("INSERT INTO vastaus (tenttiid, kysymysid, vastaus_teksti) VALUES ($1, $2, $3)", [req.body.tenttiid, req.body.kysymysid, req.body.uusivastaus] )
   .then(function (response) {
    
         console.log("vastaus lisätty");
@@ -357,12 +357,16 @@ app.post('/lisavastaus', async (req, res,) =>{
 
 app.delete('/poistatentti', async (req, res,) =>{
   console.log("yritään poista tentin")
-  await pool.query("DELETE FROM tentti WHERE id=$1", [req.body.tentti])
-  .then(function (response) {
+  console.log(req.query.id)
+  //let tiedot = req.params.current_id
+  //console.log(tiedot)
+  console.log(req.body.data)
+  await pool.query("DELETE FROM tentti WHERE id=$1", [req.query.id])
+  .then(function (res) {
     console.log("tuntti poistettu")
   })
-  .catch(function (error) {
-      console.log(error);
+  .catch(function (err) {
+      console.log(err);
 
   });
  
@@ -380,10 +384,11 @@ app.delete('/poistavastaus', async (req, res,) =>{
   });
  
 })
-
+/*
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
+*/
 
 
 
