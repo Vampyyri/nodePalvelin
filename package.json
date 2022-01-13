@@ -13,6 +13,7 @@
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.1",
     "cors": "^2.8.5",
+    "EventEmitter": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
     "mysql": "^2.18.1",
@@ -22,7 +23,8 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
-    "web-vitals": "^1.0.1"
+    "web-vitals": "^1.0.1",
+    "ws": "^8.4.0"
   },
   "scripts": {
     "start": "react-scripts start",

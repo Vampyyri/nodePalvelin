@@ -12,7 +12,10 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const cors = require('cors');
 const lodash = require("lodash"); 
-
+const ws = require('ws');
+const clients = new Set();
+const wss = new ws.Server({ noServer: true });
+var fs = require('fs');
 
 
 
@@ -31,19 +34,57 @@ var mysql = require('mysql');
 
 
 const { Pool, Client } = require("pg");
+var EventEmitter = require('events');
+var util = require('util');
+
+function DbEventEmitter(){
+  EventEmitter.call(this);
+}
+
+util.inherits(DbEventEmitter, EventEmitter);
+var dbEventEmitter = new DbEventEmitter;
+
+
+dbEventEmitter.on('lisaatentti', (msg) => {
+  // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
+ // WebSocket.send('uusi tentti on lisätty: ' + msg.nimi);
+ var mess = ('uusi tentti on lisätty: ' + msg.nimi)
+ console.log(mess)
+ pool.emit(mess);
+}); 
+
+/*
+dbEventEmitter.on('lisaatentti', (msg) => {
+  // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
+  WebSocket.send('uusi tentti on lisätty: ' + msg.nimi);
+});
+*/
+
+
 const pool = new Pool({
   user:"postgres",
   host:"localhost",
   database:"Tentit_uusi",
   password: "AK6090oeSQL",
   port: 5432,
+})
+
+pool.connect(function(err, client) {
+  if(err) {
+    console.log("66", err);
+  }
+
+  // Listen for all pg_notify channel messages
+  client.on('notification', function(msg) {
+    let payload = JSON.parse(msg.payload);
+    dbEventEmitter.emit(msg.channel, payload);
+  });
+  
+  // Designate which channels we are listening on. Add additional channels with multiple lines.
+  console.log('LISTEN lisaatentti');
+  client.query('LISTEN lisaatentti');
 });
-/*
-pool.query("SELECT NOW()", (err, res) => {
-  console.log(err, res);
-  pool.end();
-});
-*/
+
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -183,11 +224,12 @@ app.post('/login', async (req, res, ) => {
 
 app.get('/lessons', checkToken, async (request, response) => {
   try {
+    console.log("get lessons")
     var lessons = await pool.query('SELECT * FROM tentti')
     .then(function (response) {
       //console.log(response)
       var tentit = response.rows
-     // console.log("Tentit: ", tentit)
+      //console.log("Tentit: ", tentit)
       return tentit
     })
     .catch(error => console.error(error))
@@ -210,14 +252,15 @@ app.get('/lessons', checkToken, async (request, response) => {
     })
     .catch(error => console.error(error))
 
+   console.log("Ennen forEach: ")
+   //console.log("lessons: ", lessons)
+   var kysymykset = []
+   var vastaukset = []
+   var new_kysymykset = []
+   var new_tentit = []
+   var uudet_tentit = 0
 
-    var kysymykset = []
-    var vastaukset = []
-    var new_kysymykset = []
-    var new_tentit = []
-    var uudet_tentit = 0
-
-    lessons.forEach((element) => {
+   lessons.forEach((element) => {
       
       let currentid = Object.values(element.id)
 
@@ -235,24 +278,26 @@ app.get('/lessons', checkToken, async (request, response) => {
             
       questions.forEach((item) => {
         if (Object.values(item.tenttiid).toString() == currentid.toString()){
-           //kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
-        let kys_id = item.id
-        answers.forEach((i) => {
-          //console.log("kys_id: ", kys_id)
-          //console.log("i.kysymysid: ", i.kysymysid)
-          if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
-            //console.log("hyväksytty_kys_id: ", kys_id)
-            //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
-            vastaukset.push(i.vastaus_teksti)
-            //console.log("Vastaukset: ", vastaukset)
-          }
-        })
-        
-        new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
-        vastaukset = []
+          // kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
+          let kys_id = item.id
+          console.log("kys_id: ", kys_id)
+          answers.forEach((i) => {
+            console.log("kys_id: ", kys_id)
+            console.log("i.kysymysid: ", i.kysymysid)
+            if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
+              //console.log("hyväksytty_kys_id: ", kys_id)
+              //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
+              vastaukset.push(i.vastaus_teksti)
+              console.log("Vastaukset: ", vastaukset)
+              new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
+              vastaukset = []
+            }
+          })
         }
+        
+        
        
-        //console.log("new_kysymykset: ", new_kysymykset)
+        console.log("new_kysymykset: ", new_kysymykset)
         
       }) 
       
@@ -277,7 +322,7 @@ app.get('/lessons', checkToken, async (request, response) => {
     console.log("uudet nyt: ", uudet_tentit)
     response.send(uudet_tentit)
   }  catch (error) {
-    response.json({error:"jokin meni pieleen kirjautumisessa:"+error})
+    response.json({error:"jokin meni pieleen tietojen hakemisessa:"+error})
   }    
   
 })
@@ -360,10 +405,10 @@ app.delete('/poistatentti', async (req, res,) =>{
   console.log(req.query.id)
   //let tiedot = req.params.current_id
   //console.log(tiedot)
-  console.log(req.body.data)
+ 
   await pool.query("DELETE FROM tentti WHERE id=$1", [req.query.id])
   .then(function (res) {
-    console.log("tuntti poistettu")
+    console.log("tentti poistettu")
   })
   .catch(function (err) {
       console.log(err);
