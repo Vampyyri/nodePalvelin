@@ -43,7 +43,8 @@ function DbEventEmitter(){
 
 util.inherits(DbEventEmitter, EventEmitter);
 var dbEventEmitter = new DbEventEmitter;
-
+/*
+var kirje = 0
 
 dbEventEmitter.on('lisaatentti', (msg) => {
   // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
@@ -51,8 +52,10 @@ dbEventEmitter.on('lisaatentti', (msg) => {
  var mess = ('uusi tentti on lisätty: ' + msg.nimi)
  console.log(mess)
  pool.emit(mess);
+ kirje = mess
+ console.log(kirje)
 }); 
-
+*/
 /*
 dbEventEmitter.on('lisaatentti', (msg) => {
   // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
@@ -280,15 +283,15 @@ app.get('/lessons', checkToken, async (request, response) => {
         if (Object.values(item.tenttiid).toString() == currentid.toString()){
           // kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
           let kys_id = item.id
-          console.log("kys_id: ", kys_id)
+          //console.log("kys_id: ", kys_id)
           answers.forEach((i) => {
-            console.log("kys_id: ", kys_id)
-            console.log("i.kysymysid: ", i.kysymysid)
+            //console.log("kys_id: ", kys_id)
+            //console.log("i.kysymysid: ", i.kysymysid)
             if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
               //console.log("hyväksytty_kys_id: ", kys_id)
               //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
               vastaukset.push(i.vastaus_teksti)
-              console.log("Vastaukset: ", vastaukset)
+              //console.log("Vastaukset: ", vastaukset)
               new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
               vastaukset = []
             }
@@ -297,7 +300,7 @@ app.get('/lessons', checkToken, async (request, response) => {
         
         
        
-        console.log("new_kysymykset: ", new_kysymykset)
+        //console.log("new_kysymykset: ", new_kysymykset)
         
       }) 
       
@@ -319,8 +322,32 @@ app.get('/lessons', checkToken, async (request, response) => {
     })
     console.log("Get useEffectista tuli")
     uudet_tentit = {tentit: new_tentit}
-    console.log("uudet nyt: ", uudet_tentit)
-    response.send(uudet_tentit)
+    //console.log("uudet nyt: ", uudet_tentit)
+    
+    //const letter = []
+    
+    dbEventEmitter.on('lisaatentti', (msg) => {
+          // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
+        // WebSocket.send('uusi tentti on lisätty: ' + msg.nimi);
+        var mess = ('uusi tentti on lisätty: ' + msg.nimi)
+        //console.log(uudet_tentit)
+        pool.emit(mess);
+       
+        //letter.push(mess)
+                    
+    }); 
+    
+    
+     /* 
+    console.log("Letter: ", letter)
+    var kirje = letter[0]
+
+    letter.pop()
+    */
+    console.log("Kirje: ", kirje)
+    response.send({uudet_tentit: uudet_tentit, kirje: kirje})
+    //console.log("Nyt:", uudet_tentit, kirje)
+    //response.send(uudet_tentit)
   }  catch (error) {
     response.json({error:"jokin meni pieleen tietojen hakemisessa:"+error})
   }    
