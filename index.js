@@ -285,13 +285,13 @@ app.get('/lessons', checkToken, async (request, response) => {
           let kys_id = item.id
           //console.log("kys_id: ", kys_id)
           answers.forEach((i) => {
-            //console.log("kys_id: ", kys_id)
-            //console.log("i.kysymysid: ", i.kysymysid)
+            console.log("kys_id: ", kys_id)
+            console.log("i.kysymysid: ", i.kysymysid)
             if (Object.values(i.kysymysid).toString() == kys_id.toString()) {
               //console.log("hyväksytty_kys_id: ", kys_id)
               //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
               vastaukset.push(i.vastaus_teksti)
-              //console.log("Vastaukset: ", vastaukset)
+              console.log("Vastaukset: ", vastaukset)
               new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
               vastaukset = []
             }
@@ -325,18 +325,20 @@ app.get('/lessons', checkToken, async (request, response) => {
     //console.log("uudet nyt: ", uudet_tentit)
     
     //const letter = []
-    
+    /*
     dbEventEmitter.on('lisaatentti', (msg) => {
           // Custom logic for reacting to the event e.g. firing a webhook, writing a log entry etc
         // WebSocket.send('uusi tentti on lisätty: ' + msg.nimi);
         var mess = ('uusi tentti on lisätty: ' + msg.nimi)
         //console.log(uudet_tentit)
-        pool.emit(mess);
+        pool.emit('notification', {
+          message: msg.nimi
+        });
        
         //letter.push(mess)
                     
     }); 
-    
+    */
     
      /* 
     console.log("Letter: ", letter)
@@ -344,9 +346,9 @@ app.get('/lessons', checkToken, async (request, response) => {
 
     letter.pop()
     */
-    console.log("Kirje: ", kirje)
-    response.send({uudet_tentit: uudet_tentit, kirje: kirje})
-    //console.log("Nyt:", uudet_tentit, kirje)
+    //console.log("Kirje: ", kirje)
+    response.send({uudet_tentit: uudet_tentit})
+    console.log("Nyt:", uudet_tentit)
     //response.send(uudet_tentit)
   }  catch (error) {
     response.json({error:"jokin meni pieleen tietojen hakemisessa:"+error})
@@ -399,10 +401,10 @@ app.post('/lisatentti', async (req, res,) =>{
 
 app.post('/lisakysymys', async (req, res,) =>{
   console.log("yritään lisätä kysymyksen")
-  await pool.query("INSERT INTO kysymys (tenttiid, kysymys_teksti) VALUES ($1, $2)", [req.body.tenttiid, "Mitä vielä kysyä?"] )
+  await pool.query("INSERT INTO kysymys (tenttiid, kysymys_teksti) VALUES ($1, $2)", [req.body.tenttiid, req.body.teksti] )
   .then(function (response) {
    
-        console.log("kysymysi lisätty");
+        console.log("kysymys lisätty: ", req.body.tenttiid, req.body.teksti);
 
   })
   .catch(function (error) {
@@ -435,7 +437,7 @@ app.delete('/poistatentti', async (req, res,) =>{
  
   await pool.query("DELETE FROM tentti WHERE id=$1", [req.query.id])
   .then(function (res) {
-    console.log("tentti poistettu")
+    console.log("tentti poistettu: ", req.query.id)
   })
   .catch(function (err) {
       console.log(err);
@@ -446,8 +448,9 @@ app.delete('/poistatentti', async (req, res,) =>{
 
 app.delete('/poistavastaus', async (req, res,) =>{
   console.log("yritään poista vastauksen")
-  await pool.query("DELETE FROM vastaus WHERE id=$1", [req.body.vastaus])
-  .then(function (response) {
+  await pool.query("DELETE FROM vastaus WHERE vastaus_teksti=$1", [req.query.vastaus])
+  .then(function (res) {
+    console.log(req.query.vastaus)
     console.log("vastaus poistettu")
   })
   .catch(function (error) {
@@ -501,21 +504,4 @@ var server = https.createServer(options, app).listen(443, function(){
   });
 
 
-  
-/*
-var server = https.createServer(options, app, function (req, res) {
-  fs.readFile('db.json', {encoding: "utf8"}, function(err, data) {
-    res.writeHead(200, {'Content-Type': 'text/json'});
-    res.write(data);
-    console.log(data)
-    return res.end();
-    });
-  }).listen(443, function(){
-  console.log("Express server listening on port " + 443);
-  });
-
-app.get('/', function (req, res) {
-    res.writeHead(200);
-    res.end("hello world\n");
-});
-*/
+ 
