@@ -266,7 +266,7 @@ app.get('/lessons', checkToken, async (request, response) => {
    lessons.forEach((element) => {
       
       let currentid = Object.values(element.id)
-
+      /*
       function kys(a, currentid, key, id, kysymys_teksti) {
         console.log("tenttiid: ", Object.values(key))
         console.log("currentid: ", currentid)
@@ -278,7 +278,7 @@ app.get('/lessons', checkToken, async (request, response) => {
           
         }
       }
-            
+        */    
       questions.forEach((item) => {
         if (Object.values(item.tenttiid).toString() == currentid.toString()){
           // kys(item, currentid, item.tenttiid, item.id, item.kysymys_teksti)
@@ -292,15 +292,16 @@ app.get('/lessons', checkToken, async (request, response) => {
               //console.log("hyväksytty_i.kysymysid: ", i.kysymysid)
               vastaukset.push(i.vastaus_teksti)
               console.log("Vastaukset: ", vastaukset)
-              new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
-              vastaukset = []
+             
             }
           })
+          new_kysymykset.push({id: item.id, tenttiid: item.tenttiid, kysymys_teksti: item.kysymys_teksti, vastaukset: vastaukset})
+          vastaukset = [] 
         }
         
         
        
-        //console.log("new_kysymykset: ", new_kysymykset)
+        console.log("new_kysymykset: ", new_kysymykset)
         
       }) 
       
