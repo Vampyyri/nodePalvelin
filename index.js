@@ -349,7 +349,7 @@ app.get('/lessons', checkToken, async (request, response) => {
     */
     //console.log("Kirje: ", kirje)
     response.send({uudet_tentit: uudet_tentit})
-    console.log("Nyt:", uudet_tentit)
+    //console.log("Nyt:", uudet_tentit)
     //response.send(uudet_tentit)
   }  catch (error) {
     response.json({error:"jokin meni pieleen tietojen hakemisessa:"+error})
@@ -358,11 +358,21 @@ app.get('/lessons', checkToken, async (request, response) => {
 })
 // loppu lohkon Tunnit tietokannasta React-sovelluksiin
 
+app.post('/luo', async (req, res,) => {
+  await pool.query("INSERT INTO käyttäjän_tentti (Käyttäjäid, Tenttiid) VALUES ($1, $2)", [] )
+  await pool.query("INSERT INTO käyttäjän_vastaus (käyttäjäid, vastausid) VALUES ($1, $2)", [] )
 
+      
+}
+)
 app.put('/valinta', async (req, res,) => {
   console.log("ollan valinnassa")
-  
-  await pool.query("UPDATE käyttäjän_vastaus SET valinta = true WHERE vastaus_teksti=$1", [req.body.vastaus])
+  console.log(req.body.vastaus)
+  var val_id = await pool.query("SELECT id FROM vastaus WHERE vastaus_teksti=$1", [req.body.vastaus])
+  console.log(val_id)
+  val_id = val_id.rows[0].id
+  console.log(val_id)  
+  await pool.query("UPDATE käyttäjän_vastaus SET valinta = true WHERE id=$1", [val_id])
     .then(function (response) {
       console.log("vastauksen bolean on päivitetty");
 
@@ -370,7 +380,8 @@ app.put('/valinta', async (req, res,) => {
     .catch(function (error) {
         console.log(error);
     });
-})
+}) 
+
 
 
 
@@ -442,6 +453,20 @@ app.delete('/poistatentti', async (req, res,) =>{
   })
   .catch(function (err) {
       console.log(err);
+
+  });
+ 
+})
+
+app.delete('/poistakysymys', async (req, res,) =>{
+  console.log("yritään poista kysymyksen")
+  await pool.query("DELETE FROM kysymys WHERE id=$1", [req.query.kysymys])
+  .then(function (res) {
+    console.log(req.query.vastaus)
+    console.log("vastaus poistettu")
+  })
+  .catch(function (error) {
+      console.log(error);
 
   });
  
