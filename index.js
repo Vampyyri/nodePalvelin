@@ -68,7 +68,7 @@ const pool = new Pool({
   user:"postgres",
   host:"localhost",
   database:"Tentit_uusi",
-  password: "AK6090oeSQL",
+  password: "", //poistettu githubin versiosta
   port: 5432,
 })
 
